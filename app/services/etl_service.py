@@ -38,6 +38,8 @@ def extraer_shows(cantidad: int) -> int:
                 break
 
             # PK natural: usamos el id original de la API
+            # Esto garantiza que el mismo ID se use en MongoDB (_id) y MySQL (id_show)
+            # permitiendo cruzar registros entre ambas bases (validado: id=1 coincide en ambas)
             show["_id"] = show["id"]
 
             # Idempotencia: upsert por _id
