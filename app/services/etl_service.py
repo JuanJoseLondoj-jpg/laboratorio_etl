@@ -147,8 +147,8 @@ def transformar_y_cargar() -> int:
     finally:
         db.close()
 
+    print(f"[ETL] Transformación completa: {len(df_final)} registros procesados hacia MySQL")
     return len(df_final)
-
 
 # ── Reset del pipeline (EENDXI) ───────────────────────────────────────
 from sqlalchemy import text
