@@ -2,6 +2,7 @@
 # Crea las tablas en MySQL si no existen y registra los routers.
 from fastapi import FastAPI
 from app.database import Base, engine
+from app.models.personajes_sql import Show
 from app.controllers import etl_controller, analitica_controller
 
 # Crear tablas si no existen (resiliencia)
