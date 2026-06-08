@@ -1,7 +1,17 @@
 # etl_service.py - Lógica del pipeline ETL.
 # Extracción: llama TVmaze API, maneja paginación y guarda en MongoDB con upsert.
 # La PK natural (_id) es el ID original de la API para alinear con MySQL.
-import requests
+#
+# División de responsabilidades en este archivo:
+#   - extraer_shows()        → Juan José: extrae de TVmaze y guarda en MongoDB
+#   - transformar_y_cargar() → Eendxi: transforma con Pandas y carga en MySQL
+#   - reset_pipeline()       → Eendxi: limpia MongoDB y MySQL para reiniciar
+#
+# Flujo completo del pipeline:
+#   1. POST /extraer    → TVmaze API → MongoDB (datos crudos)
+#   2. POST /transformar → MongoDB → Pandas → MySQL (datos limpios)
+#   3. DELETE /reset    → limpia ambas bases para nueva ejecución
+
 from app.database import coleccion_raw
 from app.config import API_BASE_URL
 
@@ -180,3 +190,7 @@ def reset_pipeline() -> dict:
         "mongo": docs_eliminados,
         "mysql": docs_eliminados
     }
+# Garantías implementadas:
+#   - Idempotencia: ningún endpoint duplica datos al ejecutarse varias veces
+#   - PK alineada: id_show en MySQL == _id en MongoDB (mismo número)
+#   - Resiliencia: la tabla se crea si no existe (Base.metadata.create_all)
