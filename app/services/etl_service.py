@@ -12,6 +12,7 @@
 #   2. POST /transformar → MongoDB → Pandas → MySQL (datos limpios)
 #   3. DELETE /reset    → limpia ambas bases para nueva ejecución
 
+import requests
 from app.database import coleccion_raw
 from app.config import API_BASE_URL
 
@@ -29,7 +30,7 @@ def extraer_shows(cantidad: int) -> int:
     if cantidad <= 0:
         raise ValueError("La cantidad debe ser mayor a 0")
     registros_guardados = 0
-
+    pagina = 0
     while registros_guardados < cantidad:
         response = requests.get(f"{API_BASE_URL}/shows", params={"page": pagina})
 
