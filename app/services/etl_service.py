@@ -56,7 +56,7 @@ def transformar_y_cargar() -> int:
     Lee los datos crudos de MongoDB, los transforma con Pandas
     y los carga en MySQL. Es idempotente: no duplica datos.
     """
-    # 1. EXTRACT desde MongoDB
+    # 1. EXTRACT desde MongoDB (colección shows_raw)
     documentos = list(coleccion_raw.find())
     if not documentos:
         return 0
