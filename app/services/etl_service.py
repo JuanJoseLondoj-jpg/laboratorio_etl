@@ -45,3 +45,125 @@ def extraer_shows(cantidad: int) -> int:
         pagina += 1
 
     return registros_guardados
+
+# ── Transformación y Carga (EENDXI) ──────────────────────────────────
+import pandas as pd
+from app.database import coleccion_raw, SessionLocal, engine, Base
+from app.models.personajes_sql import Show
+
+def transformar_y_cargar() -> int:
+    """
+    Lee los datos crudos de MongoDB, los transforma con Pandas
+    y los carga en MySQL. Es idempotente: no duplica datos.
+    """
+    # 1. EXTRACT desde MongoDB
+    documentos = list(coleccion_raw.find())
+    if not documentos:
+        return 0
+
+    # 2. TRANSFORM con Pandas
+    df = pd.DataFrame(documentos)
+
+    # Renombrar _id a id_show (la PK de MySQL)
+    df.rename(columns={"_id": "id_show"}, inplace=True)
+
+    # Aplanar columna 'network' (viene como dict: {"id":1, "name":"CBS"})
+    df["red_television"] = df["network"].apply(
+        lambda x: x.get("name", "N/A") if isinstance(x, dict) and x else "N/A"
+    )
+
+    # Aplanar columna 'rating' (viene como dict: {"average": 7.5})
+    df["calificacion"] = df["rating"].apply(
+        lambda x: float(x.get("average")) if isinstance(x, dict) and x.get("average") else None
+    )
+
+    # Aplanar columna 'genres' (viene como lista: ["Drama", "Comedy"])
+    df["genero_principal"] = df["genres"].apply(
+        lambda x: x[0] if isinstance(x, list) and len(x) > 0 else "N/A"
+    )
+
+    # Convertir fecha de string a date
+    df["fecha_estreno"] = pd.to_datetime(df["premiered"], errors="coerce").dt.date
+
+    # Manejar nulos en columnas de texto
+    df["nombre"]       = df["name"].fillna("N/A")
+    df["tipo"]         = df["type"].fillna("N/A")
+    df["idioma"]       = df["language"].fillna("N/A")
+    df["estado"]       = df["status"].fillna("N/A")
+    df["duracion_min"] = pd.to_numeric(df["runtime"], errors="coerce").fillna(0).astype(int)
+
+    # Seleccionar solo las columnas que van a MySQL
+    df_final = df[["id_show","nombre","tipo","idioma","estado",
+                   "duracion_min","fecha_estreno","calificacion",
+                   "genero_principal","red_television"]].copy()
+
+    # 3. LOAD en MySQL
+    # Crear tabla si no existe (resiliencia)
+    Base.metadata.create_all(bind=engine)
+
+    db = SessionLocal()
+    try:
+        for _, fila in df_final.iterrows():
+            existente = db.query(Show).filter(
+                Show.id_show == int(fila["id_show"])
+            ).first()
+
+            if existente:
+                # Ya existe → actualizar (idempotencia)
+                existente.nombre           = str(fila["nombre"])
+                existente.tipo             = str(fila["tipo"])
+                existente.idioma           = str(fila["idioma"])
+                existente.estado           = str(fila["estado"])
+                existente.duracion_min     = int(fila["duracion_min"])
+                existente.fecha_estreno    = fila["fecha_estreno"]
+                existente.calificacion     = fila["calificacion"]
+                existente.genero_principal = str(fila["genero_principal"])
+                existente.red_television   = str(fila["red_television"])
+            else:
+                # No existe → insertar
+                nuevo = Show(
+                    id_show          = int(fila["id_show"]),
+                    nombre           = str(fila["nombre"]),
+                    tipo             = str(fila["tipo"]),
+                    idioma           = str(fila["idioma"]),
+                    estado           = str(fila["estado"]),
+                    duracion_min     = int(fila["duracion_min"]),
+                    fecha_estreno    = fila["fecha_estreno"],
+                    calificacion     = fila["calificacion"],
+                    genero_principal = str(fila["genero_principal"]),
+                    red_television   = str(fila["red_television"])
+                )
+                db.add(nuevo)
+
+        db.commit()
+    finally:
+        db.close()
+
+    return len(df_final)
+
+
+# ── Reset del pipeline (EENDXI) ───────────────────────────────────────
+from sqlalchemy import text
+
+def reset_pipeline() -> dict:
+    """
+    Limpia MongoDB con delete_many y MySQL con TRUNCATE.
+    La tabla queda vacía pero existente, lista para el siguiente pipeline.
+    TRUNCATE es más rápido que DELETE y resetea los contadores.
+    NO usamos DROP porque eso eliminaría la estructura de la tabla.
+    """
+    # Limpiar MongoDB - eliminar todos los documentos
+    resultado = coleccion_raw.delete_many({})
+    docs_eliminados = resultado.deleted_count
+
+    # Limpiar MySQL con TRUNCATE (no DROP)
+    with engine.connect() as conn:
+        conn.execute(text("SET FOREIGN_KEY_CHECKS = 0"))
+        conn.execute(text("TRUNCATE TABLE shows_master"))
+        conn.execute(text("SET FOREIGN_KEY_CHECKS = 1"))
+        conn.commit()
+
+    return {
+        "mongo": docs_eliminados,
+        "mysql": docs_eliminados
+    }
