@@ -10,9 +10,15 @@ FUENTE = "TVmaze API"
 # ── Extracción ───────────────────────────────────────────
 
 def extraer_shows(cantidad: int) -> int:
-    """Extrae shows de TVmaze y los guarda en MongoDB con idempotencia."""
+    """
+    Extrae shows de TVmaze y los guarda en MongoDB con idempotencia.
+    Usa upsert por _id para evitar duplicados en ejecuciones repetidas.
+    La PK natural (_id) es el ID original de la API.
+    Lanza ValueError si cantidad <= 0.
+    """
+    if cantidad <= 0:
+        raise ValueError("La cantidad debe ser mayor a 0")
     registros_guardados = 0
-    pagina = 0
 
     while registros_guardados < cantidad:
         response = requests.get(f"{API_BASE_URL}/shows", params={"page": pagina})
