@@ -1,10 +1,12 @@
+# schemas.py - Esquemas Pydantic para validar los JSON de entrada y salida.
+# Cada endpoint tiene su propio schema de respuesta.
 from pydantic import BaseModel, Field
 from typing import Optional
 
 # ── Entrada ──────────────────────────────────────────────
 
 class ExtraccionRequest(BaseModel):
-    cantidad: int = Field(..., gt=0, description="Cantidad de shows a extraer")
+    cantidad: int = Field(..., gt=0, description="Cantidad de shows a extraer, debe ser mayor a 0")
 
 # ── Salida ETL ───────────────────────────────────────────
 
