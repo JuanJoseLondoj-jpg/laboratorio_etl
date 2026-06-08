@@ -1,3 +1,5 @@
+# config.py - Carga las variables de entorno del archivo .env
+# y las expone como constantes para toda la aplicación.
 from dotenv import load_dotenv
 import os
 
@@ -16,3 +18,6 @@ MYSQL_DB = os.getenv("MYSQL_DB", "laboratorio_etl")
 
 # URL de conexión para SQLAlchemy
 MYSQL_URL = f"mysql+mysqlconnector://{MYSQL_USER}:{MYSQL_PASSWORD}@{MYSQL_HOST}:{MYSQL_PORT}/{MYSQL_DB}"
+
+# Fuente de datos
+API_BASE_URL = "https://api.tvmaze.com"
