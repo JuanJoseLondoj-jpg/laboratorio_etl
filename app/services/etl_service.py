@@ -1,17 +1,21 @@
+# etl_service.py - Lógica del pipeline ETL.
+# Extracción: llama TVmaze API, maneja paginación y guarda en MongoDB con upsert.
+# La PK natural (_id) es el ID original de la API para alinear con MySQL.
 import requests
 from app.database import coleccion_raw
+from app.config import API_BASE_URL
 
-API_URL = "https://api.tvmaze.com/shows"
 FUENTE = "TVmaze API"
 
 # ── Extracción ───────────────────────────────────────────
 
 def extraer_shows(cantidad: int) -> int:
+    """Extrae shows de TVmaze y los guarda en MongoDB con idempotencia."""
     registros_guardados = 0
     pagina = 0
 
     while registros_guardados < cantidad:
-        response = requests.get(API_URL, params={"page": pagina})
+        response = requests.get(f"{API_BASE_URL}/shows", params={"page": pagina})
 
         # Si no hay más páginas, detenemos
         if response.status_code == 404:
