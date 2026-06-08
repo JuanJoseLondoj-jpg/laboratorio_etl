@@ -155,11 +155,16 @@ from sqlalchemy import text
 
 def reset_pipeline() -> dict:
     """
-    Limpia MongoDB con delete_many y MySQL con TRUNCATE.
-    La tabla queda vacía pero existente, lista para el siguiente pipeline.
-    TRUNCATE es más rápido que DELETE y resetea los contadores.
-    NO usamos DROP porque eso eliminaría la estructura de la tabla.
-    """
+    Reinicia completamente el pipeline ETL.
+    - MongoDB: delete_many({}) elimina todos los documentos de shows_raw.
+    - MySQL: TRUNCATE TABLE vacía shows_master pero conserva la estructura.
+    Diferencia clave:
+      TRUNCATE: borra todo rápido, resetea contadores, no se puede deshacer.
+      DROP: eliminaría la tabla entera (estructura + datos). NO usamos esto.
+      DELETE: borra fila por fila, más lento. NO usamos esto.
+    Idempotente: se puede ejecutar múltiples veces sin error.
+    Retorna conteo de documentos eliminados en cada base.
+    """ 
     # Limpiar MongoDB - eliminar todos los documentos
     resultado = coleccion_raw.delete_many({})
     docs_eliminados = resultado.deleted_count
