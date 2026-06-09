@@ -77,12 +77,26 @@ def analizar_columna(nombre: str) -> dict:
 
 # ── Endpoint E: Perfil Dual Mongo + SQL ──────────────────────────────
 
+# ── Endpoint E: Perfil Dual Mongo + SQL ──────────────────────────────
+
 def perfil_dual(id: int) -> dict:
     # 1. Consultar MongoDB por _id
     doc_mongo = coleccion_raw.find_one({"_id": id})
 
-    # 2. Consultar MySQL (próximo commit)
-    doc_sql = None
+    # 2. Consultar MySQL por id_show
+    db = SessionLocal()
+    try:
+        resultado = db.execute(
+            text("SELECT * FROM shows_master WHERE id_show = :id"), {"id": id}
+        ).fetchone()
+        doc_sql = dict(resultado._mapping) if resultado else None
+    finally:
+        db.close()
+
+    # Convertir fechas a string para que JSON las pueda serializar
+    if doc_sql:
+        doc_sql = {k: str(v) if hasattr(v, 'isoformat') else v
+                   for k, v in doc_sql.items()}
 
     # 3. Manejar los 3 casos (próximo commit)
     pass
