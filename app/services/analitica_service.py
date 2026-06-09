@@ -75,10 +75,6 @@ def analizar_columna(nombre: str) -> dict:
 
 # ── Endpoint E: Perfil Dual Mongo + SQL ──────────────────────────────
 
-# ── Endpoint E: Perfil Dual Mongo + SQL ──────────────────────────────
-
-# ── Endpoint E: Perfil Dual Mongo + SQL ──────────────────────────────
-
 def perfil_dual(id: int) -> dict:
     # 1. Consultar MongoDB por _id
     doc_mongo = coleccion_raw.find_one({"_id": id})
@@ -98,5 +94,32 @@ def perfil_dual(id: int) -> dict:
         doc_sql = {k: str(v) if hasattr(v, 'isoformat') else v
                    for k, v in doc_sql.items()}
 
-    # 3. Manejar los 3 casos (próximo commit)
-    pass
+    # 3. Manejar los 3 casos
+    # Caso 3: no existe en ninguna → el controller devuelve 404
+    if doc_mongo is None and doc_sql is None:
+        return None
+
+    # Caso 2a: solo en Mongo
+    if doc_mongo is not None and doc_sql is None:
+        return {
+            "id": id,
+            "vista_mongo": doc_mongo,
+            "vista_sql": None,
+            "warning": "Registro existe en Mongo pero no en MySQL. Posiblemente no se ha ejecutado /transformar o el registro falló en la transformación."
+        }
+
+    # Caso 2b: solo en MySQL
+    if doc_mongo is None and doc_sql is not None:
+        return {
+            "id": id,
+            "vista_mongo": None,
+            "vista_sql": doc_sql,
+            "warning": "Registro existe en MySQL pero no en Mongo. Inconsistencia en el pipeline."
+        }
+
+    # Caso 1: existe en ambas
+    return {
+        "id": id,
+        "vista_mongo": doc_mongo,
+        "vista_sql": doc_sql
+    }
