@@ -25,8 +25,18 @@ def analizar_columna(nombre: str) -> dict:
     columna = df[nombre]
     nulos = int(columna.isna().sum())
 
+    # Booleana
+    if columna.dtype == bool or set(columna.dropna().unique()).issubset({True, False, 0, 1}):
+        return {
+            "columna": nombre,
+            "tipo": "booleana",
+            "true": int(columna.sum()),
+            "false": int((columna == False).sum()),
+            "nulos": nulos
+        }
+
     # Numérica
-    if pd.api.types.is_numeric_dtype(columna):
+    elif pd.api.types.is_numeric_dtype(columna):
         return {
             "columna": nombre,
             "tipo": "numerica",
@@ -35,6 +45,17 @@ def analizar_columna(nombre: str) -> dict:
             "promedio": round(float(columna.mean()), 2),
             "mediana": float(columna.median()),
             "desviacion_std": round(float(columna.std()), 2),
+            "nulos": nulos
+        }
+
+    # Fecha
+    elif pd.api.types.is_datetime64_any_dtype(columna):
+        return {
+            "columna": nombre,
+            "tipo": "fecha",
+            "min": str(columna.min().date()),
+            "max": str(columna.max().date()),
+            "rango_dias": (columna.max() - columna.min()).days,
             "nulos": nulos
         }
 
