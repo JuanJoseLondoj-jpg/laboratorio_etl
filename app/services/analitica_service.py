@@ -12,13 +12,14 @@ def analizar_columna(nombre: str) -> dict:
     # Cargar tabla completa
     df = pd.read_sql("SELECT * FROM shows_master", engine)
 
-    # Verificar que la columna existe
+    # Verificar que la columna existe, si no retornar 400 con columnas válidas
     if nombre not in df.columns:
         raise HTTPException(
             status_code=400,
             detail={
-                "error": f"La columna '{nombre}' no existe",
-                "columnas_validas": list(df.columns)
+                "error": f"La columna '{nombre}' no existe en shows_master",
+                "columnas_validas": list(df.columns),
+                "sugerencia": "Usa uno de los nombres de columna listados arriba"
             }
         )
 
