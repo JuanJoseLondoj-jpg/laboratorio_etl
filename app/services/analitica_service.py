@@ -12,6 +12,11 @@ def analizar_columna(nombre: str) -> dict:
     # Cargar tabla completa
     df = pd.read_sql("SELECT * FROM shows_master", engine)
 
+    # Convertir columnas que parecen fechas
+    for col in df.columns:
+        if "fecha" in col.lower() or "date" in col.lower():
+            df[col] = pd.to_datetime(df[col], errors="coerce")
+
     # Verificar que la columna existe, si no retornar 400 con columnas válidas
     if nombre not in df.columns:
         raise HTTPException(
