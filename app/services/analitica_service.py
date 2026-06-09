@@ -38,6 +38,19 @@ def analizar_columna(nombre: str) -> dict:
             "nulos": nulos
         }
 
+    # Categórica (texto)
+    else:
+        distribucion = columna.value_counts().to_dict()
+        distribucion = {str(k): int(v) for k, v in distribucion.items()}
+        return {
+            "columna": nombre,
+            "tipo": "categorica",
+            "valores_unicos": int(columna.nunique()),
+            "distribucion": distribucion,
+            "valor_mas_comun": str(columna.mode()[0]),
+            "nulos": nulos
+        }
+
 # ── Endpoint E: Perfil Dual Mongo + SQL ──────────────────────────────
 
 def perfil_dual(id: int) -> dict:
