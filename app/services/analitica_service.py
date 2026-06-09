@@ -90,6 +90,8 @@ def perfil_dual(id: int) -> dict:
         db.close()
 
     # Convertir fechas a string para que JSON las pueda serializar
+    # MySQL retorna objetos date/datetime que JSON no entiende directamente
+    # hasattr(v, 'isoformat') detecta si el valor es una fecha y lo convierte a string
     if doc_sql:
         doc_sql = {k: str(v) if hasattr(v, 'isoformat') else v
                    for k, v in doc_sql.items()}
