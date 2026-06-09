@@ -75,10 +75,14 @@ def analizar_columna(nombre: str) -> dict:
 
 # ── Endpoint E: Perfil Dual Mongo + SQL ──────────────────────────────
 
+# ── Endpoint E: Perfil Dual Mongo + SQL ──────────────────────────────
+
 def perfil_dual(id: int) -> dict:
-    # 1. Consultar MongoDB
-    doc_mongo = None
-    # 2. Consultar MySQL
+    # 1. Consultar MongoDB por _id
+    doc_mongo = coleccion_raw.find_one({"_id": id})
+
+    # 2. Consultar MySQL (próximo commit)
     doc_sql = None
-    # 3. Manejar los 3 casos
+
+    # 3. Manejar los 3 casos (próximo commit)
     pass
