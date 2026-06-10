@@ -110,11 +110,12 @@ def transformar_y_cargar() -> int:
     df["idioma"]       = df["language"].fillna("N/A")
     df["estado"]       = df["status"].fillna("N/A")
     df["duracion_min"] = pd.to_numeric(df["runtime"], errors="coerce").fillna(0).astype(int)
+    df["en_emision"] = df["estado"] == "Running"
 
     # Seleccionar solo las columnas que van a MySQL
     df_final = df[["id_show","nombre","tipo","idioma","estado",
-                   "duracion_min","fecha_estreno","calificacion",
-                   "genero_principal","red_television"]].copy()
+               "duracion_min","fecha_estreno","calificacion",
+               "genero_principal","red_television","en_emision"]].copy()
 
     # 3. LOAD en MySQL
     # Crear tabla si no existe (resiliencia)
@@ -138,6 +139,7 @@ def transformar_y_cargar() -> int:
                 existente.calificacion     = fila["calificacion"]
                 existente.genero_principal = str(fila["genero_principal"])
                 existente.red_television   = str(fila["red_television"])
+                existente.en_emision       = bool(fila["en_emision"])
             else:
                 # No existe → insertar
                 nuevo = Show(
@@ -150,7 +152,8 @@ def transformar_y_cargar() -> int:
                     fecha_estreno    = fila["fecha_estreno"],
                     calificacion     = fila["calificacion"],
                     genero_principal = str(fila["genero_principal"]),
-                    red_television   = str(fila["red_television"])
+                    red_television   = str(fila["red_television"]),
+                    en_emision       = bool(fila["en_emision"]),
                 )
                 db.add(nuevo)
 

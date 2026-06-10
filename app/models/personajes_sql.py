@@ -17,3 +17,4 @@ class Show(Base):
     calificacion     = Column(Float, nullable=True)
     genero_principal = Column(String(100), nullable=True)
     red_television   = Column(String(255), nullable=True)
+    en_emision       = Column(Boolean, nullable=True, comment="True si estado es Running")
